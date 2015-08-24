@@ -12,33 +12,32 @@ var input = args.t || "古池や蛙飛び込む水の音";
 //
 function Counter(max) {
   this.count = 0;
+  this._readingstore = "";
   this.max = max;
 };
 Counter.prototype.reset = function() {
   this.count = 0;
   return this;
 };
-Counter.prototype.canAdd = function(num) {
+Counter.prototype.canAdd = function(reading) {
   if (!this.max) {
     return true;
   }
-  if (this.max - ( this.count + num ) >= 0) {
+  if (this.max - ( this.count + this.calculateLength(reading) ) >= 0) {
     return true;
   } else {
     return false;
   }
 };
-Counter.prototype.add = function(num) {
-  this.count += num;
+Counter.prototype.add = function(reading) {
+  this._readingstore += reading;
+  this.count += this.calculateLength(reading);
   return this;
 };
-Counter.prototype.increment = function() {
-  this.add(1);
-  return this;
-};
-Counter.prototype.decrement = function() {
-  this.add(-1);
-  return this;
+Counter.prototype.calculateLength = function (str) {
+  var _str = str;
+  _str = _str.replace(/[ぁ|ぃ|ぅ|ぇ|ぉ|ゃ|ゅ|ょ]/g, '');
+  return _str.length;
 };
 Counter.prototype.get = function() {
   return this.count;
@@ -106,17 +105,23 @@ Senryu.prototype.check = function (str, cb) {
         // 上/中/下最初の単語
         if (currentTankaCounter.get() === 0) {
           //最初の単語にふさわしく、単語が収まりきれば
-          if (check_first_word(node) && currentTankaCounter.canAdd(node.reading.length)) {
-            currentTankaCounter.add(node.reading.length);
+          if (check_first_word(node) && currentTankaCounter.canAdd(node.reading)) {
+            currentTankaCounter.add(node.reading);
           }
         } else {
-          if (currentTankaCounter.canAdd(node.reading.length)) {
-            currentTankaCounter.add(node.reading.length);
+          if (currentTankaCounter.canAdd(node.reading)) {
+            currentTankaCounter.add(node.reading);
           }
         }
       });
 
       total = first_counter.get() + second_counter.get() + third_counter.get();
+
+      console.log(
+        first_counter,
+        second_counter,
+        third_counter
+      );
 
       resolve({
         isSenryu : ( total === 17 ),
