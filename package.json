@@ -1,0 +1,8 @@
+{
+  "private": true,
+  "dependencies": {
+    "bluebird": "^2.9.34",
+    "kuromoji": "0.0.2",
+    "yargs": "^3.21.0"
+  }
+}
