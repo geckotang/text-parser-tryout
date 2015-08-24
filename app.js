@@ -6,6 +6,44 @@ var Promise = require("bluebird");
 var args = require('yargs').argv;
 var input = args.t || "古池や蛙飛び込む水の音";
 
+
+//
+//カウンター
+//
+function Counter(max) {
+  this.count = 0;
+  this.max = max;
+};
+Counter.prototype.reset = function() {
+  this.count = 0;
+  return this;
+};
+Counter.prototype.canAdd = function(num) {
+  if (!this.max) {
+    return true;
+  }
+  if (this.max - ( this.count + num ) >= 0) {
+    return true;
+  } else {
+    return false;
+  }
+};
+Counter.prototype.add = function(num) {
+  this.count += num;
+  return this;
+};
+Counter.prototype.increment = function() {
+  this.add(1);
+  return this;
+};
+Counter.prototype.decrement = function() {
+  this.add(-1);
+  return this;
+};
+Counter.prototype.get = function() {
+  return this.count;
+};
+
 //
 // parse word with parser engine
 //
@@ -44,38 +82,44 @@ Senryu.prototype.check = function (str, cb) {
     that.parse(str).then(function(parsedData){
 
       //ルールは http://swimath2.hatenablog.com/entry/2015/03/15/180240 を参照
-      var tankaArray = ['','',''];
-      var tankaMaxCountRule = [5, 7, 5];
+      var first_counter = new Counter(5);
+      var second_counter = new Counter(7);
+      var third_counter = new Counter(5);
+      var total = 0;
+
       parsedData.forEach(function(node){
         var currentSenryuPosition = 0;
-        var currentMaxCount = tankaMaxCountRule[currentSenryuPosition];
+        var currentTankaCounter = first_counter;
         var isLastPosition = false;
-        var currentWords = '';
         //上の句
-        if (tankaArray[0].length >= 5) { currentSenryuPosition = 1; }
+        if (first_counter.get() === 5) { 
+          currentTankaCounter = second_counter;
+        }
         //中の句
-        if (tankaArray[1].length >= 7) { currentSenryuPosition = 2; }
+        if (second_counter.get() === 7) { 
+          currentTankaCounter = third_counter;
+        }
         //終了
-        if (tankaArray[2].length >= 5) { isLastPosition = true; }
-
-        currentMaxCount = tankaMaxCountRule[currentSenryuPosition];
-        currentWords = tankaArray[currentSenryuPosition];
-
+        if (third_counter.get() === 5) {
+          isLastPosition = true;
+        }
         // 上/中/下最初の単語
-        if (currentWords.length === 0) {
+        if (currentTankaCounter.get() === 0) {
           //最初の単語にふさわしく、単語が収まりきれば
-          if (check_first_word(node) && check_capacity(currentMaxCount, currentWords, node)) {
-            tankaArray[currentSenryuPosition] += node.reading;
+          if (check_first_word(node) && currentTankaCounter.canAdd(node.reading.length)) {
+            currentTankaCounter.add(node.reading.length);
           }
         } else {
-          if (check_capacity(currentMaxCount, currentWords, node)) {
-            tankaArray[currentSenryuPosition] += node.reading;
+          if (currentTankaCounter.canAdd(node.reading.length)) {
+            currentTankaCounter.add(node.reading.length);
           }
         }
       });
 
+      total = first_counter.get() + second_counter.get() + third_counter.get();
+
       resolve({
-        isSenryu : ( tankaArray.join('').length === 17 ),
+        isSenryu : ( total === 17 ),
         rawStr: str,
         parsedData: parsedData
       })
@@ -90,10 +134,6 @@ Senryu.prototype.check = function (str, cb) {
     if (/^![ぁ|ぃ|ぅ|ぇ|ぉ|っ|ゅ|ゃ|ょ]/.test(node.pos)) {
       return true;
     }
-  }
-  //上/中/下の句に収まりきるか判断する
-  function check_capacity(max, box, node) {
-    return max - (box.length - node.reading.length) > 0;
   }
 };
 
