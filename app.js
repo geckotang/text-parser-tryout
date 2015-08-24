@@ -115,6 +115,9 @@ Senryu.prototype.check = function (str, cb) {
         if (third_counter.get() === 5) {
           isLastPosition = true;
         }
+        if (!node.reading) {
+          node.reading = node.surface_form;
+        }
         if (currentWordCounter.canAdd(node)) {
           currentWordCounter.add(node.reading);
         }
