@@ -137,8 +137,8 @@ Senryu.prototype.check = function (str, cb) {
 var senryu = new Senryu();
 senryu.check(input).then(function(result){
   if (result.isSenryu) {
-    console.log("「"+result.rawStr+"」は短歌です");
+    console.log("「"+result.rawStr+"」は川柳です");
   } else {
-    console.log("「"+result.rawStr+"」は短歌ではありません");
+    console.log("「"+result.rawStr+"」は川柳ではありません");
   }
 });
