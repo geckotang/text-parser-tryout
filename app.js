@@ -4,7 +4,7 @@
 var kuromoji = require("kuromoji");
 var Promise = require("bluebird");
 var args = require('yargs').argv;
-var input = args.t || "古池蛙飛び込む水の音";
+var input = args.t || "古池や蛙飛び込む水の音";
 
 //
 // parse word with parser engine
