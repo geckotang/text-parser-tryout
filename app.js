@@ -10,36 +10,49 @@ var input = args.t || "古池や蛙飛び込む水の音";
 //
 //カウンター
 //
-function Counter(max) {
+function WordCounter(max) {
   this.count = 0;
   this._readingstore = "";
   this.max = max;
 };
-Counter.prototype.reset = function() {
+WordCounter.prototype.reset = function() {
   this.count = 0;
   return this;
 };
-Counter.prototype.canAdd = function(reading) {
+WordCounter.prototype.canAdd = function(node) {
   if (!this.max) {
     return true;
   }
-  if (this.max - ( this.count + this.calculateLength(reading) ) >= 0) {
-    return true;
-  } else {
-    return false;
+  //最初の単語としてふさわしいかチェックする
+  if (this.count === 0) {
+    return this.canUseFirstWord(node)
   }
+  //最大数を超えていないかチェックする
+  return (this.max - ( this.count + this.calculateLength(node.reading) ) >= 0);
 };
-Counter.prototype.add = function(reading) {
+WordCounter.prototype.add = function(reading) {
   this._readingstore += reading;
   this.count += this.calculateLength(reading);
   return this;
 };
-Counter.prototype.calculateLength = function (str) {
+WordCounter.prototype.calculateLength = function (str) {
   var _str = str;
-  _str = _str.replace(/[ぁ|ぃ|ぅ|ぇ|ぉ|ゃ|ゅ|ょ]/g, '');
+  //小文字、記号は0文字カウントする
+  if (!_str) {
+    return 0;
+  }
+  _str = _str.replace(/[ぁぃぅぇぉゃゅょァィゥェォャュョ]/g, '');
   return _str.length;
 };
-Counter.prototype.get = function() {
+WordCounter.prototype.canUseFirstWord = function (node) {
+  if (/名詞|動詞|形容詞|形容動詞|副詞|連体詞|接続詞|感動詞|接頭詞|フィラー/.test(node.pos)) {
+    return true;
+  }
+  if (/^![ぁぃぅぇぉっゃゅょァィゥェォッャュョ]/.test(node.reading)) {
+    return true;
+  }
+};
+WordCounter.prototype.get = function() {
   return this.count;
 };
 
@@ -81,47 +94,35 @@ Senryu.prototype.check = function (str, cb) {
     that.parse(str).then(function(parsedData){
 
       //ルールは http://swimath2.hatenablog.com/entry/2015/03/15/180240 を参照
-      var first_counter = new Counter(5);
-      var second_counter = new Counter(7);
-      var third_counter = new Counter(5);
+      var first_counter = new WordCounter(5);
+      var second_counter = new WordCounter(7);
+      var third_counter = new WordCounter(5);
       var total = 0;
 
       parsedData.forEach(function(node){
         var currentSenryuPosition = 0;
-        var currentTankaCounter = first_counter;
+        var currentWordCounter = first_counter;
         var isLastPosition = false;
         //上の句
-        if (first_counter.get() === 5) { 
-          currentTankaCounter = second_counter;
+        if (first_counter.get() === 5) {
+          currentWordCounter = second_counter;
         }
         //中の句
-        if (second_counter.get() === 7) { 
-          currentTankaCounter = third_counter;
+        if (second_counter.get() === 7) {
+          currentWordCounter = third_counter;
         }
         //終了
         if (third_counter.get() === 5) {
           isLastPosition = true;
         }
-        // 上/中/下最初の単語
-        if (currentTankaCounter.get() === 0) {
-          //最初の単語にふさわしく、単語が収まりきれば
-          if (check_first_word(node) && currentTankaCounter.canAdd(node.reading)) {
-            currentTankaCounter.add(node.reading);
-          }
-        } else {
-          if (currentTankaCounter.canAdd(node.reading)) {
-            currentTankaCounter.add(node.reading);
-          }
+        if (currentWordCounter.canAdd(node)) {
+          currentWordCounter.add(node.reading);
         }
       });
 
       total = first_counter.get() + second_counter.get() + third_counter.get();
 
-      console.log(
-        first_counter,
-        second_counter,
-        third_counter
-      );
+      //console.log( first_counter, second_counter, third_counter);
 
       resolve({
         isSenryu : ( total === 17 ),
@@ -130,16 +131,6 @@ Senryu.prototype.check = function (str, cb) {
       })
     });
   });
-
-  //上/中/下の句の最初の単語にふさわしいか判断する
-  function check_first_word(node) {
-    if (/名詞|動詞|形容詞|形容動詞|副詞|連体詞|接続詞|感動詞|接頭詞|フィラー/.test(node.pos)) {
-      return true;
-    }
-    if (/^![ぁ|ぃ|ぅ|ぇ|ぉ|っ|ゅ|ゃ|ょ]/.test(node.pos)) {
-      return true;
-    }
-  }
 };
 
 
